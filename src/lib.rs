@@ -201,8 +201,6 @@ impl RType {
     fn string(src: &[u8]) -> Result<Self> {
         Err(Error::More)
     }
-
-    // fn length_decode(src: &[u8]) -> Result<>
 }
 
 impl Shift for RType {
@@ -220,10 +218,17 @@ pub enum Length {
 }
 
 impl Length {
+    pub fn length(&self) -> usize {
+        match self {
+            &Length::Small(val) => val as usize,
+            &Length::Normal(val) => val as usize,
+            &Length::Large(val) => val as usize,
+        }
+    }
     pub fn from_buf(src: &[u8]) -> Result<Length> {
-        let ltype = src[0];
+        let ltype = src[0] & 0b11;
         match ltype {
-            REDIS_RDB_6BITLEN => Ok(Length::Small(ltype & 0b00111111)),
+            REDIS_RDB_6BITLEN => Ok(Length::Small(ltype & 0x3f)),
             REDIS_RDB_14BITLEN => {
                 more!(src.len() < 2);
                 let value = buf_to_u16(src);
@@ -256,6 +261,45 @@ pub enum RedisString {
     LZF,
 }
 
+impl RedisString {
+    pub fn from_buf(src: &[u8]) -> Result<RedisString> {
+        unimplemented!();
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LZFString {
+    compressed_len: Length,
+    original_len: Length,
+    buf: Vec<usize>,
+}
+
+
+impl LZFString {
+    pub fn from_buf(src: &[u8]) -> Result<LZFString> {
+        let ltype = src[0] & 0b11;
+        if ltype != REDIS_RDB_ENC_LZF {
+            return Err(Error::Faild("LZF flag not found"));
+        }
+
+        let compressed_len = Length::from_buf(&src[1..])?;
+        let original_len = Length::from_buf(&src[(1 + compressed_len.shift())..])?;
+        more!(src.len() < 1 + compressed_len.shift() + original_len.shift());
+        // let mut lzf_content = Vec::with_capacity(original_len.length());
+        // TODO
+
+        Err(Error::More)
+    }
+}
+
+impl Shift for LZFString {
+    #[inline]
+    fn shift(&self) -> usize {
+        1 + self.compressed_len.shift() + self.original_len.shift() + self.compressed_len.length()
+    }
+}
+
+
 pub enum StrInt {
     Small(i8),
     Normal(i16),
@@ -275,7 +319,7 @@ impl Shift for StrInt {
 
 impl StrInt {
     pub fn from_buf(src: &[u8]) -> Result<StrInt> {
-        let ltype = src[0];
+        let ltype = src[0] & 0x3f;
         match ltype {
             REDIS_RDB_ENC_INT8 => {
                 more!(src.len() < 1 + 1);
@@ -300,6 +344,9 @@ impl StrInt {
 
 mod com {
     use std::result;
+    use lzf;
+    use std::io;
+    use std::convert::From;
 
     pub type Result<T> = result::Result<T, Error>;
 
@@ -309,6 +356,14 @@ mod com {
         More,
         Faild(&'static str),
         Other,
+        LzfError(lzf::LzfError),
+        IoError(io::Error),
+    }
+
+    impl From<lzf::LzfError> for Error {
+        fn from(oe: lzf::LzfError) -> Error {
+            Error::LzfError(oe)
+        }
     }
 
     #[inline]
