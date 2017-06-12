@@ -1,0 +1,11 @@
+[package]
+name = "newbee"
+version = "0.1.0"
+authors = ["wayslog <wayslog@163.com>"]
+
+[lib]
+path="src/lib.rs"
+name="libnb"
+
+[dependencies]
+lzf = "0.3.1"
