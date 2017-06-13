@@ -3,7 +3,6 @@ use com::*;
 use consts::*;
 use codec::RedisString;
 
-
 #[derive(Debug)]
 pub enum RedisType {
     // general type
@@ -51,7 +50,7 @@ impl Shift for RedisType {
 }
 
 #[derive(Debug)]
-pub enum RedisData {}
+pub struct RedisData {}
 
 impl FromBuf for RedisData {
     fn from_buf(_src: &[u8]) -> Result<Self> {

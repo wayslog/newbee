@@ -13,8 +13,7 @@ pub use codec::*;
 pub use types::*;
 pub use consts::*;
 
-use std::io::Read;
-pub trait RdbParser: Read {
+pub trait RdbParser {
     fn read_to_local(&mut self) -> Result<usize>;
     fn local_buf(&self) -> &[u8];
 
@@ -43,6 +42,8 @@ pub trait RdbParser: Read {
         Err(Error::More)
     }
 }
+
+
 #[derive(Debug)]
 pub enum State {
     Header,

@@ -199,22 +199,36 @@ impl StrInt {
 }
 
 
-pub struct LinkedList<I>
+
+// Base series container of redis list type
+pub struct RedisList<I>
     where I: Shift + FromBuf
 {
     length: Length,
     items: Vec<I>,
 }
 
-impl<I> FromBuf for LinkedList<I>
+impl<I> FromBuf for RedisList<I>
     where I: Shift + FromBuf
 {
     fn from_buf(src: &[u8]) -> Result<Self> {
-        unimplemented!();
+        let length = Length::from_buf(src)?;
+        let mut pos = length.shift();
+
+        let mut items = Vec::new();
+        for _ in 0..length.length() {
+            let item: I = FromBuf::from_buf(&src[pos..])?;
+            pos += item.shift();
+            items.push(item);
+        }
+        Ok(RedisList {
+            length: length,
+            items: items,
+        })
     }
 }
 
-impl<I> Shift for LinkedList<I>
+impl<I> Shift for RedisList<I>
     where I: Shift + FromBuf
 {
     fn shift(&self) -> usize {
@@ -222,5 +236,107 @@ impl<I> Shift for LinkedList<I>
     }
 }
 
+// for List
+pub struct LinkedListItem(RedisString);
+
+impl Shift for LinkedListItem {
+    fn shift(&self) -> usize {
+        self.0.shift()
+    }
+}
+
+impl FromBuf for LinkedListItem {
+    fn from_buf(src: &[u8]) -> Result<Self> {
+        let rstr = RedisString::from_buf(src)?;
+        Ok(LinkedListItem(rstr))
+    }
+}
+
+// for zset list
+pub struct ZSetItem {
+    member: RedisString,
+    score: RedisString,
+}
+
+impl Shift for ZSetItem {
+    fn shift(&self) -> usize {
+        self.member.shift() + self.score.shift()
+    }
+}
+
+impl FromBuf for ZSetItem {
+    fn from_buf(src: &[u8]) -> Result<ZSetItem> {
+        let member = RedisString::from_buf(src)?;
+        let score = RedisString::from_buf(&src[member.shift()..])?;
+        Ok(ZSetItem {
+            member: member,
+            score: score,
+        })
+    }
+}
+
+
+// for Hash
+pub struct HashItem {
+    key: RedisString,
+    value: RedisString,
+}
+
+impl Shift for HashItem {
+    fn shift(&self) -> usize {
+        self.key.shift() + self.value.shift()
+    }
+}
+
+impl FromBuf for HashItem {
+    fn from_buf(src: &[u8]) -> Result<Self> {
+        let key = RedisString::from_buf(src)?;
+        let value = RedisString::from_buf(&src[key.shift()..])?;
+        Ok(HashItem {
+            key: key,
+            value: value,
+        })
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct ZipListTail(u32);
+
+impl Shift for ZipListTail {
+    fn shift(&self) -> usize {
+        4
+    }
+}
+
+impl FromBuf for ZipListTail {
+    fn from_buf(src: &[u8]) -> Result<Self> {
+        more!(src.len() < 4);
+        let val = buf_to_u32_little_endian(src);
+        Ok(ZipListTail(val))
+    }
+}
+
+
+#[derive(Copy, Clone, Debug)]
+pub struct ZipListItemLen(u16);
+
+impl Shift for ZipListItemLen {
+    fn shift(&self) -> usize {
+        2
+    }
+}
+
+impl FromBuf for ZipListItemLen {
+    fn from_buf(src: &[u8]) -> Result<Self> {
+        more!(src.len() < 2);
+        let val = buf_to_u16_little_endian(src);
+        Ok(ZipListItemLen(val))
+    }
+}
+
+
+#[derive(Clone, Debug)]
 pub struct ZipList {
+    zlbyets: Length,
+    zltails: ZipListTail, // TODO: ziplist
 }

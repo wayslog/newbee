@@ -113,6 +113,17 @@ pub fn buf_to_u32(src: &[u8]) -> u32 {
     vu32
 }
 
+
+#[inline]
+pub fn buf_to_u32_little_endian(src: &[u8]) -> u32 {
+    let mut vu32 = 0u32;
+    vu32 |= (src[3] as u32) << 24;
+    vu32 |= (src[2] as u32) << 16;
+    vu32 |= (src[1] as u32) << 8;
+    vu32 |= (src[0] as u32) << 0;
+    vu32
+}
+
 #[inline]
 pub fn buf_to_u64(src: &[u8]) -> u64 {
     let mut vu64 = 0u64;
@@ -150,6 +161,14 @@ pub fn buf_to_u16(src: &[u8]) -> u16 {
 }
 
 #[inline]
+pub fn buf_to_u16_little_endian(src: &[u8]) -> u16 {
+    let mut vu16 = 0u16;
+    vu16 |= (src[1] as u16) << 8;
+    vu16 |= (src[0] as u16) << 0;
+    vu16
+}
+
+#[inline]
 pub fn buf_to_i16(src: &[u8]) -> i16 {
     let mut vi16 = 0i16;
     vi16 |= (src[0] as i16) << 8;
@@ -161,4 +180,11 @@ pub fn data_to_float(buf: Vec<u8>) -> Result<f64> {
     let sv = String::from_utf8(buf)?;
     let val = sv.parse::<f64>()?;
     Ok(val)
+}
+
+
+#[test]
+fn test_buf() {
+    let values = vec![0, 0, 1, 3];
+    assert_eq!(256 + 3, buf_to_i32(&values[..]));
 }
