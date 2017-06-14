@@ -56,6 +56,22 @@ macro_rules! choice {
     }
 
 
+impl Shift for u8 {
+    #[inline]
+    fn shift(&self) -> usize {
+        1
+    }
+}
+
+impl FromBuf for u8
+    where Self: Sized
+{
+    fn from_buf(src: &[u8]) -> Result<Self> {
+        more!(src.len() < 1);
+        Ok(src[0])
+    }
+}
+
 pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
@@ -104,6 +120,15 @@ pub fn buf_to_i32(src: &[u8]) -> i32 {
 }
 
 #[inline]
+pub fn buf_to_i32_trim(src: &[u8]) -> i32 {
+    let mut vi32 = 0i32;
+    vi32 |= (src[0] as i32) << 16;
+    vi32 |= (src[1] as i32) << 8;
+    vi32 |= (src[2] as i32) << 0;
+    vi32
+}
+
+#[inline]
 pub fn buf_to_u32(src: &[u8]) -> u32 {
     let mut vu32 = 0u32;
     vu32 |= (src[0] as u32) << 24;
@@ -122,6 +147,20 @@ pub fn buf_to_u32_little_endian(src: &[u8]) -> u32 {
     vu32 |= (src[1] as u32) << 8;
     vu32 |= (src[0] as u32) << 0;
     vu32
+}
+
+#[inline]
+pub fn buf_to_u64_little_endian(src: &[u8]) -> u64 {
+    let mut vu64 = 0u64;
+    vu64 |= (src[0] as u64) << 0;
+    vu64 |= (src[1] as u64) << 8;
+    vu64 |= (src[2] as u64) << 16;
+    vu64 |= (src[3] as u64) << 24;
+    vu64 |= (src[4] as u64) << 32;
+    vu64 |= (src[5] as u64) << 40;
+    vu64 |= (src[6] as u64) << 48;
+    vu64 |= (src[7] as u64) << 56;
+    vu64
 }
 
 #[inline]

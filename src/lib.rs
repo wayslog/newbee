@@ -35,11 +35,11 @@ pub trait RdbParser {
     fn data(&mut self) -> Result<RdbEntry> {
         let src = self.local_buf();
         let expire = ExpireTime::from_buf(src)?;
-        let key = RedisString::from_buf(src)?;
-        let data = RedisType::from_buf(src)?;
-
-        // TODO: done for it
-        Err(Error::More)
+        let data = RedisData::from_buf(src)?;
+        Ok(RdbEntry::Data {
+            expire: expire,
+            data: data,
+        })
     }
 }
 
@@ -55,12 +55,15 @@ pub enum State {
 pub enum RdbEntry {
     Version(u32),
     Sector(u8),
-    Data {
-        expire: ExpireTime,
-        rtype: RedisType,
-        key: RedisString,
-        value: RedisType,
-    },
+    Data { expire: ExpireTime, data: RedisData },
+}
+impl RdbEntry {
+    fn is_data(&self) -> bool {
+        match self {
+            &RdbEntry::Data { .. } => true,
+            _ => false,
+        }
+    }
 }
 
 impl Shift for RdbEntry {
@@ -71,51 +74,24 @@ impl Shift for RdbEntry {
             &RdbEntry::Version(_) => 5 + 4,
             // 0xFE + u8
             &RdbEntry::Sector(_) => 2,
-            &RdbEntry::Data { ref expire, ref rtype, ref key, ref value } => {
-                expire.shift() + rtype.shift() + key.shift() + value.shift()
-            }
+            &RdbEntry::Data { ref expire, ref data } => expire.shift() + data.shift(),
         }
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum ExpireTime {
-    Ms(i64),
-    Sec(i32),
-    None,
+
+pub trait Dumps {
+    fn dumps(&self) -> Result<Vec<Vec<u8>>>;
 }
 
-impl Shift for ExpireTime {
-    #[inline]
-    fn shift(&self) -> usize {
+impl Dumps for RdbEntry {
+    fn dumps(&self) -> Result<Vec<Vec<u8>>> {
         match self {
-            &ExpireTime::Ms(_) => 8 + 1,
-            &ExpireTime::Sec(_) => 4 + 1,
-            _ => 0,
-        }
-    }
-}
-
-impl FromBuf for ExpireTime {
-    fn from_buf(src: &[u8]) -> Result<ExpireTime> {
-        choice!(ExpireTime::expire_in_ms(src));
-        choice!(ExpireTime::expire_in_sec(src));
-        Ok(ExpireTime::None)
-    }
-}
-
-impl ExpireTime {
-    #[inline]
-    pub fn expire_in_ms(src: &[u8]) -> Result<ExpireTime> {
-        other!(src[0] != REDIS_RDB_OPCODE_EXPIRETIME_MS);
-        more!(src.len() < REDIS_RDB_OPCODE_EXPIRETIME_MS_LEN + 1);
-        Ok(ExpireTime::Ms(buf_to_i64(&src[1..])))
-    }
-
-    #[inline]
-    pub fn expire_in_sec(src: &[u8]) -> Result<ExpireTime> {
-        other!(src[0] != REDIS_RDB_OPCODE_EXPIRETIME);
-        more!(src.len() < REDIS_RDB_OPCODE_EXPIRETIME_LEN + 1);
-        Ok(ExpireTime::Sec(buf_to_i32(&src[1..])))
+            &RdbEntry::Data { ref expire, ref data } => {
+                1;
+            }
+            _ => unreachable!(),
+        };
+        Err(Error::More)
     }
 }
