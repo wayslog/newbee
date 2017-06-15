@@ -93,6 +93,17 @@ impl RedisString {
 
 
 impl RedisString {
+    pub fn into_data(self) -> Vec<u8> {
+        match self {
+            RedisString::LengthPrefix { data, .. } => data,
+            RedisString::StrInt(v) => {
+                let strv = format!("{}", v.value());
+                strv.into_bytes()
+            }
+            RedisString::LZF(LZFString { buf, .. }) => buf,
+        }
+    }
+
     fn length_prefix(src: &[u8]) -> Result<RedisString> {
         let length = Length::from_buf(src)?;
         let mut data: Vec<u8> = Vec::with_capacity(length.length());
@@ -205,8 +216,8 @@ impl StrInt {
 pub struct RedisList<I>
     where I: Shift + FromBuf
 {
-    length: Length,
-    items: Vec<I>,
+    pub length: Length,
+    pub items: Vec<I>,
 }
 
 impl<I> FromBuf for RedisList<I>
@@ -239,7 +250,7 @@ impl<I> Shift for RedisList<I>
 
 // for List
 #[derive(Clone, Debug)]
-pub struct LinkedListItem(RedisString);
+pub struct LinkedListItem(pub RedisString);
 
 impl Shift for LinkedListItem {
     fn shift(&self) -> usize {
@@ -257,8 +268,8 @@ impl FromBuf for LinkedListItem {
 // for zset list
 #[derive(Clone, Debug)]
 pub struct ZSetItem {
-    member: RedisString,
-    score: RedisString,
+    pub member: RedisString,
+    pub score: RedisString,
 }
 
 impl Shift for ZSetItem {
@@ -282,8 +293,8 @@ impl FromBuf for ZSetItem {
 // for Hash
 #[derive(Clone, Debug)]
 pub struct HashItem {
-    key: RedisString,
-    value: RedisString,
+    pub key: RedisString,
+    pub value: RedisString,
 }
 
 impl Shift for HashItem {
@@ -380,6 +391,22 @@ pub enum ZLESpData {
     ExLargeInt(i64),
 }
 
+impl ZLESpData {
+    pub fn into_data(self) -> Vec<u8> {
+        match self {
+            ZLESpData::SmallStr(v) => v,
+            ZLESpData::NormalStr(v) => v,
+            ZLESpData::LargeStr(v) => v,
+            ZLESpData::ExSmallInt(v) => format!("{}", v).into_bytes(),
+            ZLESpData::SmallInt(v) => format!("{}", v).into_bytes(),
+            ZLESpData::NormalInt(v) => format!("{}", v).into_bytes(),
+            ZLESpData::LargeTrimInt(v) => format!("{}", v).into_bytes(),
+            ZLESpData::LargeInt(v) => format!("{}", v).into_bytes(),
+            ZLESpData::ExLargeInt(v) => format!("{}", v).into_bytes(),
+        }
+    }
+}
+
 impl Shift for ZLESpData {
     fn shift(&self) -> usize {
         match self {
@@ -474,8 +501,8 @@ impl FromBuf for ZLESpData {
 
 #[derive(Clone, Debug)]
 pub struct ZipListEntry {
-    prev_len: ZLELen,
-    sp: ZLESpData,
+    pub prev_len: ZLELen,
+    pub sp: ZLESpData,
 }
 
 impl Shift for ZipListEntry {
@@ -500,7 +527,7 @@ pub struct ZipList {
     zlbytes: Length,
     zltails: ZipListTail,
     zllen: ZipListLen,
-    entries: Vec<ZipListEntry>,
+    pub entries: Vec<ZipListEntry>,
     zlend: u8,
 }
 
@@ -614,9 +641,9 @@ pub enum IntSetValue {
 
 #[derive(Debug, Clone)]
 pub struct IntSet {
-    encoding: IntSetEncoding,
-    count: IntSetCount,
-    ints: Vec<i64>,
+    pub encoding: IntSetEncoding,
+    pub count: IntSetCount,
+    pub ints: Vec<i64>,
 }
 
 impl Shift for IntSet {

@@ -86,6 +86,12 @@ pub enum Error {
     ParseFloatError(ParseFloatError),
 }
 
+impl From<io::Error> for Error {
+    fn from(oe: io::Error) -> Error {
+        Error::IoError(oe)
+    }
+}
+
 impl From<ParseFloatError> for Error {
     fn from(oe: ParseFloatError) -> Error {
         Error::ParseFloatError(oe)
