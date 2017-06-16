@@ -9,7 +9,7 @@ description = "this is a rdb streamed parser"
 # These URLs point to more information about the repository. These are
 # intended to be webviews of the relevant data, not necessarily compatible
 # with VCS tools and the like.
-documentation = ""
+documentation = "https://docs.rs/newbee"
 homepage = "https://github.com/wayslog/newbee"
 repository = "https://github.com/wayslog/newbee"
 
