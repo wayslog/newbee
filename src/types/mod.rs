@@ -2,7 +2,7 @@ use com::*;
 use consts::*;
 use codec::*;
 use fmt::*;
-use std::time::{self, SystemTime, Duration};
+use std::time::{self, SystemTime};
 
 pub type Key = RedisString;
 
@@ -298,28 +298,5 @@ impl ExpireTime {
         other!(src[0] != REDIS_RDB_OPCODE_EXPIRETIME);
         more!(src.len() < REDIS_RDB_OPCODE_EXPIRETIME_LEN + 1);
         Ok(ExpireTime::Sec(buf_to_u32(&src[1..])))
-    }
-
-    pub fn expire_str(&self, buf: &mut Vec<u8>) {
-        let now = SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap();
-
-        match self {
-            &ExpireTime::Ms(iv) => {
-                let dur = Duration::from_millis(iv as u64);
-                let px = dur - now;
-                let sec = px.as_secs();
-                let ns = px.subsec_nanos();
-                let v = format!("PX {}", sec * 1000 + (ns as u64) / 1000000);
-                buf.extend_from_slice(v.as_bytes());
-            }
-            &ExpireTime::Sec(iv) => {
-                let dur = Duration::from_secs(iv as u64);
-                let ex = dur - now;
-                let sec = ex.as_secs();
-                let v = format!("EX {}", sec);
-                buf.extend_from_slice(v.as_bytes());
-            }
-            &ExpireTime::None => {}
-        }
     }
 }

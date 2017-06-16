@@ -17,7 +17,6 @@ pub trait FromBuf
 }
 
 
-#[macro_export]
 macro_rules! more{
         ($e: expr) => {
             if $e {
@@ -26,7 +25,6 @@ macro_rules! more{
         }
     }
 
-#[macro_export]
 macro_rules! other{
         ($e: expr) => {
             if $e {
@@ -35,7 +33,6 @@ macro_rules! other{
         }
     }
 
-#[macro_export]
 macro_rules! faild{
         ($e: expr, $situation: expr) => {
             if $e {
@@ -44,7 +41,6 @@ macro_rules! faild{
         }
     }
 
-#[macro_export]
 macro_rules! choice {
         ($e: expr) => {
             match $e {
@@ -108,11 +104,6 @@ impl From<lzf::LzfError> for Error {
     fn from(oe: lzf::LzfError) -> Error {
         Error::LzfError(oe)
     }
-}
-
-#[inline]
-pub fn is_rdb_obj_type(t: u8) -> bool {
-    (t <= 4) || (t >= 9 && t <= 13)
 }
 
 #[inline]
@@ -211,10 +202,4 @@ pub fn buf_to_i16(src: &[u8]) -> i16 {
     vi16 |= (src[0] as i16) << 0;
     vi16 |= (src[1] as i16) << 8;
     vi16
-}
-
-pub fn data_to_float(buf: Vec<u8>) -> Result<f64> {
-    let sv = String::from_utf8(buf)?;
-    let val = sv.parse::<f64>()?;
-    Ok(val)
 }

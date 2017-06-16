@@ -3,13 +3,16 @@
 extern crate lzf;
 
 #[macro_use]
-pub mod com;
-pub mod consts;
-pub mod codec;
-pub mod types;
-pub mod fmt;
+mod com;
+mod consts;
+mod codec;
+mod types;
+mod fmt;
 
-pub use fmt::{Group, RedisFormat, RedisFmt, RedisCmd};
+pub use fmt::{RedisFmt, RedisCmd};
+pub use com::{Result, Error};
+
+use fmt::{RedisFormat, Group};
 use com::*;
 use codec::*;
 use types::*;
@@ -136,7 +139,7 @@ impl RdbParser for DefaultRdbParser {
 }
 
 
-pub trait RdbParser {
+trait RdbParser {
     fn read_to_local<R: Read>(&mut self, read: R) -> Result<usize>;
     fn local_buf(&self) -> &[u8];
 
@@ -181,7 +184,7 @@ pub trait RdbParser {
 
 
 #[derive(Debug)]
-pub enum State {
+enum State {
     Header,
     Sector,
     Data,
@@ -190,18 +193,10 @@ pub enum State {
 }
 
 #[derive(Debug)]
-pub enum RdbEntry {
+enum RdbEntry {
     Version(u32),
     Sector(Length),
     Data { expire: ExpireTime, data: RedisData },
-}
-impl RdbEntry {
-    pub fn is_data(&self) -> bool {
-        match self {
-            &RdbEntry::Data { .. } => true,
-            _ => false,
-        }
-    }
 }
 
 impl Shift for RdbEntry {

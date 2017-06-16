@@ -23,8 +23,6 @@ pub const REDIS_RDB_TYPE_SET_INTSET: u8 = 11;
 pub const REDIS_RDB_TYPE_ZSET_ZIPLIST: u8 = 12;
 pub const REDIS_RDB_TYPE_HASH_ZIPLIST: u8 = 13;
 
-pub const REDIS_RDB_ZLEND: u8 = 0xFF;
-
 // Special RDB opcodes (saved/loaded with rdbSaveType/rdbLoadType).
 pub const REDIS_RDB_OPCODE_EXPIRETIME_MS: u8 = 252;
 pub const REDIS_RDB_OPCODE_EXPIRETIME_MS_LEN: usize = 8;
@@ -46,6 +44,4 @@ pub const REDIS_RDB_FLAG_ZIPLIST_ENTRY_EXLARGE_INT: u8 = 0b10;
 pub const REDIS_RDB_FLAG_ZIPLIST_ENTRY_LARGE_TRIM_INT: u8 = 0b0000;
 pub const REDIS_RDB_FLAG_ZIPLIST_ENTRY_SMALL_INT: u8 = 0b1110;
 
-
-pub const REDIS_RDB_OPCODE_EOF: u8 = 255;
 pub const REDIS_MAGIC_STRING: &str = "REDIS";

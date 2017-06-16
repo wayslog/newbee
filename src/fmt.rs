@@ -30,15 +30,21 @@ pub trait RedisFormat
 }
 
 
-pub type RedisFmtList = Vec<RedisFmt>;
 #[derive(Debug, Clone)]
 pub struct RedisCmd(pub Vec<RedisFmt>);
+
+impl RedisCmd {
+    pub fn into_data(self) -> Vec<Vec<u8>> {
+        let RedisCmd(cmds) = self;
+        cmds.into_iter().map(|x| x.into_data()).collect()
+    }
+}
 
 pub trait Group {
     fn group(self) -> Vec<RedisCmd>;
 }
 
-impl Group for RedisFmtList {
+impl Group for Vec<RedisFmt> {
     fn group(self) -> Vec<RedisCmd> {
         let mut group = vec![];
         let mut local = vec![];

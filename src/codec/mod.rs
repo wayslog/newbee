@@ -80,18 +80,6 @@ impl FromBuf for RedisString {
 }
 
 impl RedisString {
-    // FIXME: Maybe Error ? I don't know if that's right
-    pub fn to_float(&self) -> Result<f64> {
-        match self {
-            &RedisString::LengthPrefix { ref data, .. } => data_to_float(data.clone()),
-            &RedisString::StrInt(ref str_int) => Ok(str_int.value() as f64),
-            &RedisString::LZF(ref lzf_str) => data_to_float(lzf_str.buf.clone()),
-        }
-    }
-}
-
-
-impl RedisString {
     pub fn into_data(self) -> Vec<u8> {
         match self {
             RedisString::LengthPrefix { data, .. } => data,
@@ -629,14 +617,6 @@ impl FromBuf for IntSetCount {
         Ok(IntSetCount(buf_to_u32(src)))
     }
 }
-
-#[derive(Debug, Clone)]
-pub enum IntSetValue {
-    Normal(i16),
-    Large(i32),
-    ExLarge(i64),
-}
-
 
 #[derive(Debug, Clone)]
 pub struct IntSet {
