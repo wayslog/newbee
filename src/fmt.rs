@@ -1,5 +1,6 @@
 use std::mem;
 
+#[derive(Debug, Clone)]
 pub enum RedisFmt {
     Cmd(&'static str),
     Raw(Vec<u8>),
@@ -30,6 +31,7 @@ pub trait RedisFormat
 
 
 pub type RedisFmtList = Vec<RedisFmt>;
+#[derive(Debug, Clone)]
 pub struct RedisCmd(pub Vec<RedisFmt>);
 
 pub trait Group {

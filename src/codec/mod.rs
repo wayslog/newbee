@@ -17,13 +17,12 @@ impl FromBuf for Length {
         match ltype {
             REDIS_RDB_6BITLEN => Ok(Length::Small(src[0] & 0x3f)),
             REDIS_RDB_14BITLEN => {
-                more!(src.len() < 1 + 1);
-                let value = buf_to_u16(src);
+                let value = buf_to_u16_big(src);
                 Ok(Length::Normal(value & 0x3fff))
             }
             REDIS_RDB_32BITLEN => {
                 more!(src.len() < 1 + 3);
-                let value = buf_to_u32(src);
+                let value = buf_to_u32_big(src);
                 Ok(Length::Large(value & 0x3fff_ffff))
             }
             REDIS_RDB_ENCVAL => Err(Error::Other),
@@ -326,7 +325,7 @@ impl Shift for ZipListTail {
 impl FromBuf for ZipListTail {
     fn from_buf(src: &[u8]) -> Result<Self> {
         more!(src.len() < 4);
-        let val = buf_to_u32_little_endian(src);
+        let val = buf_to_u32(src);
         Ok(ZipListTail(val))
     }
 }
@@ -627,7 +626,7 @@ impl Shift for IntSetCount {
 impl FromBuf for IntSetCount {
     fn from_buf(src: &[u8]) -> Result<Self> {
         more!(src.len() < 4);
-        Ok(IntSetCount(buf_to_u32_little_endian(src)))
+        Ok(IntSetCount(buf_to_u32(src)))
     }
 }
 
@@ -672,7 +671,7 @@ impl FromBuf for IntSet {
             }
         } else if e == 8 {
             |src| {
-                let uv = buf_to_u64_little_endian(src);
+                let uv = buf_to_u64(src);
                 uv as i64
             }
         } else {

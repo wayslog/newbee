@@ -10,10 +10,10 @@ pub mod types;
 pub mod fmt;
 
 pub use fmt::{Group, RedisFormat, RedisFmt, RedisCmd};
-pub use com::*;
-pub use codec::*;
-pub use types::*;
-pub use consts::*;
+use com::*;
+use codec::*;
+use types::*;
+use consts::*;
 
 use std::io::{self, Read};
 use std::mem;
@@ -23,6 +23,19 @@ pub struct DefaultRdbParser {
     cursor: usize,
     parsed: Vec<RdbEntry>,
     state: State,
+    end: Vec<u8>,
+}
+
+impl Default for DefaultRdbParser {
+    fn default() -> Self {
+        DefaultRdbParser {
+            local_buf: Vec::new(),
+            cursor: 0,
+            parsed: Vec::new(),
+            state: State::Header,
+            end: Vec::new(),
+        }
+    }
 }
 
 impl DefaultRdbParser {
@@ -33,6 +46,10 @@ impl DefaultRdbParser {
                 State::Data => {
                     let data = match self.data() {
                         Err(Error::More) => break,
+                        Err(Error::Other) => {
+                            self.state = State::Crc;
+                            continue;
+                        }
                         other => other?,
                     };
                     self.cursor += data.shift();
@@ -41,18 +58,24 @@ impl DefaultRdbParser {
                 State::Sector => {
                     let sector = self.sector()?;
                     self.cursor += sector.shift();
-                    // println!("read sector: {:?}", sector);
                     self.state = State::Data;
                 }
                 State::Header => {
                     let header = self.header()?;
                     self.cursor += header.shift();
-                    // println!("read header: {:?}", header);
                     self.state = State::Sector;
+                }
+                State::Crc => {
+                    self.end = self.crc()?;
+                    self.state = State::End;
+                }
+                State::End => {
+                    break;
                 }
             };
         }
-        let entries = self.clear_buf();
+
+        let entries = self.drain_buf();
         let mut fmts = vec![];
         for entry in entries {
             entry.fmt(&mut fmts);
@@ -61,7 +84,7 @@ impl DefaultRdbParser {
         Ok(groups)
     }
 
-    fn clear_buf(&mut self) -> Vec<RdbEntry> {
+    fn drain_buf(&mut self) -> Vec<RdbEntry> {
         let mut entries = vec![];
         mem::swap(&mut entries, &mut self.parsed);
         self.cursor = 0;
@@ -104,7 +127,11 @@ impl RdbParser for DefaultRdbParser {
     }
 
     fn local_buf(&self) -> &[u8] {
-        &self.local_buf[..]
+        if self.cursor > self.local_buf.len() {
+            &self.local_buf[self.local_buf.len()..]
+        } else {
+            &self.local_buf[self.cursor..]
+        }
     }
 }
 
@@ -113,11 +140,19 @@ pub trait RdbParser {
     fn read_to_local<R: Read>(&mut self, read: R) -> Result<usize>;
     fn local_buf(&self) -> &[u8];
 
+    fn crc(&mut self) -> Result<Vec<u8>> {
+        let src = self.local_buf();
+        other!(src[0] != 0xff);
+        Ok(src[1..].to_vec())
+    }
+
     fn header(&mut self) -> Result<RdbEntry> {
         let src = self.local_buf();
         more!(src.len() < REDIS_MAGIC_STRING.len() + 4);
         let version = &src[REDIS_MAGIC_STRING.len()..REDIS_MAGIC_STRING.len() + 4];
-        Ok(RdbEntry::Version(buf_to_u32(version)))
+        let version_str = String::from_utf8_lossy(version);
+        let version_u32 = version_str.parse::<u32>().unwrap();
+        Ok(RdbEntry::Version(version_u32))
     }
 
     fn sector(&mut self) -> Result<RdbEntry> {
@@ -125,13 +160,18 @@ pub trait RdbParser {
         more!(src.len() < 2);
         faild!(src[0] != REDIS_RDB_OPCODE_SELECTDB,
                "can't find redis_db_selector");
-        Ok(RdbEntry::Sector(src[1]))
+        let length = Length::from_buf(&src[1..])?;
+        Ok(RdbEntry::Sector(length))
     }
 
     fn data(&mut self) -> Result<RdbEntry> {
         let src = self.local_buf();
+        // meet EOF
+        if src[0] == 0xff {
+            return Err(Error::Other);
+        }
         let expire = ExpireTime::from_buf(src)?;
-        let data = RedisData::from_buf(src)?;
+        let data = RedisData::from_buf(&src[expire.shift()..])?;
         Ok(RdbEntry::Data {
             expire: expire,
             data: data,
@@ -145,12 +185,14 @@ pub enum State {
     Header,
     Sector,
     Data,
+    Crc,
+    End,
 }
 
 #[derive(Debug)]
 pub enum RdbEntry {
     Version(u32),
-    Sector(u8),
+    Sector(Length),
     Data { expire: ExpireTime, data: RedisData },
 }
 impl RdbEntry {

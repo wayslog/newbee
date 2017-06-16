@@ -1,7 +1,7 @@
-pub const REDIS_RDB_6BITLEN: u8 = 0;
-pub const REDIS_RDB_14BITLEN: u8 = 1;
-pub const REDIS_RDB_32BITLEN: u8 = 2;
-pub const REDIS_RDB_ENCVAL: u8 = 3;
+pub const REDIS_RDB_6BITLEN: u8 = 0b0;
+pub const REDIS_RDB_14BITLEN: u8 = 0b01;
+pub const REDIS_RDB_32BITLEN: u8 = 0b10;
+pub const REDIS_RDB_ENCVAL: u8 = 0b11;
 
 // pub const REDIS_RDB_LENERR: u32 = 111;
 
@@ -32,7 +32,7 @@ pub const REDIS_RDB_OPCODE_EXPIRETIME_MS_LEN: usize = 8;
 pub const REDIS_RDB_OPCODE_EXPIRETIME: u8 = 253;
 pub const REDIS_RDB_OPCODE_EXPIRETIME_LEN: usize = 4;
 
-pub const REDIS_RDB_OPCODE_SELECTDB: u8 = 254;
+pub const REDIS_RDB_OPCODE_SELECTDB: u8 = 0xFE;
 pub const REDIS_RDB_FLAG_ZIPLIST_ENTRY_LEN_MAX: u8 = 253;
 
 pub const REDIS_RDB_FLAG_ZIPLIST_ENTRY_SMALL_STR: u8 = 0b00;

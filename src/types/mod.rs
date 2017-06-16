@@ -156,7 +156,6 @@ impl FromBuf for RedisData {
     fn from_buf(src: &[u8]) -> Result<Self> {
         let ltype = src[0];
         let key = RedisString::from_buf(&src[1..])?;
-
         let src = &src[1 + key.shift()..];
         match ltype {
             REDIS_RDB_TYPE_STRING => {
@@ -223,8 +222,8 @@ impl Shift for RedisData {
 
 #[derive(Copy, Clone, Debug)]
 pub enum ExpireTime {
-    Ms(i64),
-    Sec(i32),
+    Ms(u64),
+    Sec(u32),
     None,
 }
 
@@ -261,6 +260,7 @@ impl ExpireTime {
                 buf.push(RedisFmt::Cmd("EXPIRE"));
                 buf.push(RedisFmt::Raw(key.into_data()));
                 buf.push(RedisFmt::Raw(format!("{}", sec - now).into_bytes()));
+                buf.push(RedisFmt::CRLF);
                 1
             }
             ExpireTime::Sec(sec) => {
@@ -276,6 +276,7 @@ impl ExpireTime {
                 buf.push(RedisFmt::Cmd("EXPIRE"));
                 buf.push(RedisFmt::Raw(key.into_data()));
                 buf.push(RedisFmt::Raw(format!("{}", sec - now).into_bytes()));
+                buf.push(RedisFmt::CRLF);
                 1
             }
             ExpireTime::None => 0,
@@ -289,14 +290,14 @@ impl ExpireTime {
     pub fn expire_in_ms(src: &[u8]) -> Result<ExpireTime> {
         other!(src[0] != REDIS_RDB_OPCODE_EXPIRETIME_MS);
         more!(src.len() < REDIS_RDB_OPCODE_EXPIRETIME_MS_LEN + 1);
-        Ok(ExpireTime::Ms(buf_to_i64(&src[1..])))
+        Ok(ExpireTime::Ms(buf_to_u64(&src[1..])))
     }
 
     #[inline]
     pub fn expire_in_sec(src: &[u8]) -> Result<ExpireTime> {
         other!(src[0] != REDIS_RDB_OPCODE_EXPIRETIME);
         more!(src.len() < REDIS_RDB_OPCODE_EXPIRETIME_LEN + 1);
-        Ok(ExpireTime::Sec(buf_to_i32(&src[1..])))
+        Ok(ExpireTime::Sec(buf_to_u32(&src[1..])))
     }
 
     pub fn expire_str(&self, buf: &mut Vec<u8>) {
