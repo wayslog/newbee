@@ -42,7 +42,7 @@ impl Default for DefaultRdbParser {
 }
 
 impl DefaultRdbParser {
-    pub fn read_to_cmd<R: Read>(&mut self, read: R) -> Result<Vec<RedisCmd>> {
+    pub fn read_to_cmd<R: Read>(&mut self, read: &mut R) -> Result<Vec<RedisCmd>> {
         let _readed = self.read_to_local(read)?;
         loop {
             match self.state {
@@ -96,7 +96,7 @@ impl DefaultRdbParser {
 }
 
 impl RdbParser for DefaultRdbParser {
-    fn read_to_local<R: Read>(&mut self, mut read: R) -> Result<usize> {
+    fn read_to_local<R: Read>(&mut self, read: &mut R) -> Result<usize> {
         let start_len = self.local_buf.len();
         let mut len = start_len;
         let mut new_write_size = 16;
@@ -140,7 +140,7 @@ impl RdbParser for DefaultRdbParser {
 
 
 trait RdbParser {
-    fn read_to_local<R: Read>(&mut self, read: R) -> Result<usize>;
+    fn read_to_local<R: Read>(&mut self, read: &mut R) -> Result<usize>;
     fn local_buf(&self) -> &[u8];
 
     fn crc(&mut self) -> Result<Vec<u8>> {
