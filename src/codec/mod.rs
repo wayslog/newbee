@@ -639,32 +639,25 @@ impl FromBuf for IntSet {
         let mut ints = Vec::new();
         let e = encoding.encoding();
         let mut pos = encoding.shift() + count.shift();
-        let encoding_func: fn(&[u8]) -> i64 = if e == 4 {
-            |src| {
-                let uv = buf_to_u16_little_endian(src);
-                (uv as i32) as i64
-            }
-        } else if e == 2 {
-            |src| {
-                let uv = buf_to_u16_little_endian(src);
-                (uv as i16) as i64
-            }
-        } else if e == 8 {
-            |src| {
-                let uv = buf_to_u64(src);
-                uv as i64
-            }
-        } else {
-            panic!("not valid encoding")
-        };
 
         for _ in 0..count.0 as usize {
             more!(src.len() < pos + e);
-            let val = encoding_func(&src[pos..]);
+            let val = if e == 4 {
+                let uv = buf_to_u16_little_endian(src);
+                (uv as i32) as i64
+            } else if e == 2 {
+                let uv = buf_to_u16_little_endian(src);
+                (uv as i16) as i64
+            } else if e == 8 {
+                let uv = buf_to_u64(src);
+                uv as i64
+            } else {
+                panic!("not valid encoding")
+            };
             ints.push(val);
             pos += e;
         }
 
-        Err(Error::Faild("Fuck"))
+        Err(Error::Faild("not valid intset"))
     }
 }
