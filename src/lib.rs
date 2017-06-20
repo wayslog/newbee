@@ -59,7 +59,13 @@ impl DefaultRdbParser {
                     self.parsed.push(data);
                 }
                 State::Sector => {
-                    let sector = self.sector()?;
+                    let sector = match self.sector() {
+                        Err(Error::Other) => {
+                            self.state = State::Crc;
+                            continue;
+                        }
+                        otherwise => otherwise?,
+                    };
                     self.cursor += sector.shift();
                     self.state = State::Data;
                 }
@@ -161,8 +167,7 @@ trait RdbParser {
     fn sector(&mut self) -> Result<RdbEntry> {
         let src = self.local_buf();
         more!(src.len() < 2);
-        faild!(src[0] != REDIS_RDB_OPCODE_SELECTDB,
-               "can't find redis_db_selector");
+        other!(src[0] != REDIS_RDB_OPCODE_SELECTDB);
         let length = Length::from_buf(&src[1..])?;
         Ok(RdbEntry::Sector(length))
     }
