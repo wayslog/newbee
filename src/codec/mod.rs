@@ -313,7 +313,7 @@ impl Shift for ZipListTail {
 impl FromBuf for ZipListTail {
     fn from_buf(src: &[u8]) -> Result<Self> {
         more!(src.len() < 4);
-        let val = buf_to_u32_big(src);
+        let val = buf_to_u32(src);
         Ok(ZipListTail(val))
     }
 }
@@ -331,7 +331,7 @@ impl Shift for ZipListLen {
 impl FromBuf for ZipListLen {
     fn from_buf(src: &[u8]) -> Result<Self> {
         more!(src.len() < 2);
-        let val = buf_to_u16_big(src);
+        let val = buf_to_u16(src);
         Ok(ZipListLen(val))
     }
 }
@@ -511,7 +511,7 @@ impl FromBuf for ZipListEntry {
 
 #[derive(Clone, Debug)]
 pub struct ZipList {
-    zlbytes: Length,
+    zlbytes: u32,
     zltails: ZipListTail,
     zllen: ZipListLen,
     pub entries: Vec<ZipListEntry>,
@@ -528,10 +528,10 @@ impl Shift for ZipList {
 
 impl FromBuf for ZipList {
     fn from_buf(src: &[u8]) -> Result<Self> {
-        let zlbytes = Length::from_buf(src)?;
+        let zlbytes: u32 = FromBuf::from_buf(src)?;
         let zltails = ZipListTail::from_buf(&src[zlbytes.shift()..])?;
         let zllen = ZipListLen::from_buf(&src[zlbytes.shift() + zltails.shift()..])?;
-        more!(src.len() < zlbytes.length());
+        more!(src.len() < (zlbytes as usize));
         let mut entries = Vec::new();
         let mut pos = zlbytes.shift() + zltails.shift() + zllen.shift();
 

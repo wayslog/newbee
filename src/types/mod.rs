@@ -105,7 +105,7 @@ impl RedisFormat for RedisData {
                 let local_buf = rs.into_data();
                 let ZipList { entries, .. } = ZipList::from_buf(&local_buf)
                     .expect("faild to parse ziplist list");
-                buf.push(RedisFmt::Cmd("LADD"));
+                buf.push(RedisFmt::Cmd("LPUSH"));
                 buf.push(RedisFmt::Raw(key.into_data()));
                 let sp_data = entries.into_iter().map(|ZipListEntry { sp, .. }| sp);
                 for data in sp_data {
@@ -117,7 +117,7 @@ impl RedisFormat for RedisData {
                 let local_buf = rs.into_data();
                 let ZipList { entries, .. } = ZipList::from_buf(&local_buf)
                     .expect("faild to parse ziplist hashset");
-                buf.push(RedisFmt::Cmd("LADD"));
+                buf.push(RedisFmt::Cmd("HSET"));
                 buf.push(RedisFmt::Raw(key.into_data()));
                 let sp_data = entries.into_iter().map(|ZipListEntry { sp, .. }| sp.into_data());
                 for data in sp_data {
@@ -128,7 +128,7 @@ impl RedisFormat for RedisData {
                 let local_buf = rs.into_data();
                 let ZipList { entries, .. } = ZipList::from_buf(&local_buf)
                     .expect("faild to parse ziplist sorted set");
-                buf.push(RedisFmt::Cmd("LADD"));
+                buf.push(RedisFmt::Cmd("ZADD"));
                 buf.push(RedisFmt::Raw(key.into_data()));
                 let sp_data = entries.into_iter().map(|ZipListEntry { sp, .. }| sp.into_data());
                 let mut is_score = false;
