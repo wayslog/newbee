@@ -182,18 +182,11 @@ pub fn buf_to_u16(src: &[u8]) -> u16 {
     vu16
 }
 
+#[inline]
 pub fn buf_to_u16_big(src: &[u8]) -> u16 {
     let mut value = src[1] as u16;
     value |= (src[0] as u16) << 8;
     value
-}
-
-#[inline]
-pub fn buf_to_u16_little_endian(src: &[u8]) -> u16 {
-    let mut vu16 = 0u16;
-    vu16 |= (src[1] as u16) << 0;
-    vu16 |= (src[0] as u16) << 8;
-    vu16
 }
 
 #[inline]

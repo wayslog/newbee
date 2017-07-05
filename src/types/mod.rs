@@ -50,12 +50,12 @@ impl RedisFormat for RedisData {
     fn fmt(self, buf: &mut Vec<RedisFmt>) -> usize {
         match self {
             RedisData::String(key, rs) => {
-                buf.push(RedisFmt::Cmd("set"));
+                buf.push(RedisFmt::Cmd("SET"));
                 buf.push(RedisFmt::Raw(key.into_data()));
                 buf.push(RedisFmt::Raw(rs.into_data()));
             }
             RedisData::List(key, rl) => {
-                buf.push(RedisFmt::Cmd("lpush"));
+                buf.push(RedisFmt::Cmd("LPUSH"));
                 buf.push(RedisFmt::Raw(key.into_data()));
                 let RedisList { items, .. } = rl;
                 for linked_list_item in items {

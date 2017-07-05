@@ -170,7 +170,7 @@ impl FromBuf for StrInt {
         match ltype {
             REDIS_RDB_ENC_INT8 => {
                 more!(src.len() < 1 + 1);
-                Ok(StrInt::Small(src[0] as i8))
+                Ok(StrInt::Small(src[1] as i8))
             }
             REDIS_RDB_ENC_INT16 => {
                 more!(src.len() < 1 + 2);
@@ -313,7 +313,7 @@ impl Shift for ZipListTail {
 impl FromBuf for ZipListTail {
     fn from_buf(src: &[u8]) -> Result<Self> {
         more!(src.len() < 4);
-        let val = buf_to_u32(src);
+        let val = buf_to_u32_big(src);
         Ok(ZipListTail(val))
     }
 }
@@ -331,7 +331,7 @@ impl Shift for ZipListLen {
 impl FromBuf for ZipListLen {
     fn from_buf(src: &[u8]) -> Result<Self> {
         more!(src.len() < 2);
-        let val = buf_to_u16_little_endian(src);
+        let val = buf_to_u16_big(src);
         Ok(ZipListLen(val))
     }
 }
@@ -643,13 +643,13 @@ impl FromBuf for IntSet {
         for _ in 0..count.0 as usize {
             more!(src.len() < pos + e);
             let val = if e == 4 {
-                let uv = buf_to_u16_little_endian(src);
+                let uv = buf_to_u32(&src[pos..]);
                 (uv as i32) as i64
             } else if e == 2 {
-                let uv = buf_to_u16_little_endian(src);
+                let uv = buf_to_u16(&src[pos..]);
                 (uv as i16) as i64
             } else if e == 8 {
-                let uv = buf_to_u64(src);
+                let uv = buf_to_u64(&src[pos..]);
                 uv as i64
             } else {
                 panic!("not valid encoding")
@@ -657,7 +657,10 @@ impl FromBuf for IntSet {
             ints.push(val);
             pos += e;
         }
-
-        Err(Error::Faild("not valid intset"))
+        Ok(IntSet {
+            encoding: encoding,
+            count: count,
+            ints: ints,
+        })
     }
 }
