@@ -1,6 +1,7 @@
 //! Streamed RDB Rust Parser
 
 extern crate lzf;
+extern crate byteorder;
 
 #[macro_use]
 mod com;
@@ -41,6 +42,7 @@ impl Default for DefaultRdbParser {
     }
 }
 
+
 impl DefaultRdbParser {
     pub fn read_to_cmd<R: Read>(&mut self, read: &mut R) -> Result<Vec<RedisCmd>> {
         let _readed = self.read_to_local(read)?;
@@ -48,7 +50,6 @@ impl DefaultRdbParser {
             match self.state {
                 State::Data => {
                     let data = match self.data() {
-                        Err(Error::More) => break,
                         Err(Error::Other) => {
                             self.state = State::Crc;
                             continue;

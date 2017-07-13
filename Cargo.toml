@@ -1,6 +1,6 @@
 [package]
 name = "newbee"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["wayslog <wayslog@163.com>"]
 # A short blurb about the package. This is not rendered in any format when
 # uploaded to crates.io (aka this is not markdown).
@@ -39,3 +39,4 @@ name="libnewbee"
 
 [dependencies]
 lzf = "0.3.1"
+byteorder="1.1.0"
