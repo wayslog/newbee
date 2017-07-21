@@ -171,3 +171,8 @@ pub fn buf_to_u16_big(src: &[u8]) -> u16 {
 pub fn buf_to_i16(src: &[u8]) -> i16 {
     LittleEndian::read_i16(src)
 }
+
+#[inline]
+pub fn min<T: PartialOrd + Copy>(lhs: T, rhs: T) -> T {
+    if lhs > rhs { rhs } else { lhs }
+}

@@ -137,11 +137,7 @@ impl RdbParser for DefaultRdbParser {
     }
 
     fn local_buf(&self) -> &[u8] {
-        if self.cursor > self.local_buf.len() {
-            &self.local_buf[self.local_buf.len()..]
-        } else {
-            &self.local_buf[self.cursor..]
-        }
+        &self.local_buf[min(self.cursor, self.local_buf.len())..]
     }
 }
 
