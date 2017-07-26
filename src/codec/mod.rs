@@ -512,8 +512,8 @@ impl FromBuf for ZipListEntry {
 #[derive(Clone, Debug)]
 pub struct ZipList {
     zlbytes: u32,
-    zltails: ZipListTail,
-    zllen: ZipListLen,
+    zltails: u32,
+    zllen: u16,
     pub entries: Vec<ZipListEntry>,
     zlend: u8,
 }
@@ -529,13 +529,13 @@ impl Shift for ZipList {
 impl FromBuf for ZipList {
     fn from_buf(src: &[u8]) -> Result<Self> {
         let zlbytes: u32 = FromBuf::from_buf(src)?;
-        let zltails = ZipListTail::from_buf(&src[zlbytes.shift()..])?;
-        let zllen = ZipListLen::from_buf(&src[zlbytes.shift() + zltails.shift()..])?;
+        let zltails: u32 = FromBuf::from_buf(&src[zlbytes.shift()..])?;
+        let zllen: u16 = FromBuf::from_buf(&src[zlbytes.shift() + zltails.shift()..])?;
         more!(src.len() < (zlbytes as usize));
         let mut entries = Vec::new();
         let mut pos = zlbytes.shift() + zltails.shift() + zllen.shift();
 
-        for _ in 0..zllen.0 as usize {
+        for _ in 0..zllen as usize {
             let entry = ZipListEntry::from_buf(&src[pos..])?;
             pos += entry.shift();
             entries.push(entry);
@@ -583,7 +583,8 @@ impl Shift for IntSetEncoding {
 impl FromBuf for IntSetEncoding {
     fn from_buf(src: &[u8]) -> Result<Self> {
         more!(src.len() < 4);
-        match src[0] {
+        let encoding = buf_to_u32(src);
+        match encoding {
             2 => Ok(IntSetEncoding::Normal),
             4 => Ok(IntSetEncoding::Large),
             8 => Ok(IntSetEncoding::ExLarge),

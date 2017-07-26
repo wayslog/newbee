@@ -61,6 +61,13 @@ impl Shift for u8 {
     }
 }
 
+impl Shift for u16 {
+    #[inline]
+    fn shift(&self) -> usize {
+        2
+    }
+}
+
 impl Shift for u32 {
     #[inline]
     fn shift(&self) -> usize {
@@ -74,6 +81,14 @@ impl FromBuf for u32 {
         Ok(buf_to_u32(src))
     }
 }
+
+impl FromBuf for u16 {
+    fn from_buf(src: &[u8]) -> Result<Self> {
+        more!(src.len() < 4);
+        Ok(buf_to_u16(src))
+    }
+}
+
 
 impl FromBuf for u8
     where Self: Sized
